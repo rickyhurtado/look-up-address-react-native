@@ -1,38 +1,54 @@
 import React from 'react';
-import { StatusBar, StyleSheet, View, Alert } from 'react-native';
+import { StatusBar, StyleSheet, View, Text, Alert } from 'react-native';
 import { Button } from 'react-native-elements';
+import Modal from 'react-native-modal';
 
 export default class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
+  state = {
+    showModal: false
+  };
 
   render() {
     return (
       <View style={styles.container}>
-        <StatusBar hidden={true} />
+        <StatusBar hidden={true}/>
         <View style={styles.contentContainer}>
+          <Modal isVisible={this.state.showModal}>
+            <View style={styles.modalContent}>
+              <Text>Looking up address from current GPS...</Text>
+            </View>
+          </Modal>
         </View>
         <View style={styles.lookupButton}>
-          <Button
-            large
-            title="LOOKUP CURRENT ADDRESS"
-            backgroundColor="#428bca"
-            onPress={lookupCurrentAddress}
-          />
+          {renderButton(this, () => this.setState({ showModal: true }))}
         </View>
       </View>
     );
   }
 }
 
-const lookupCurrentAddress = () => {
-  lookingUpAddressMessage();
-}
+const renderButton = (context, onPress) => {
+  lookupCurrentAddress(context);
 
-const lookingUpAddressMessage = () => {
-  errorMessage();
-}
+  return (
+    <Button
+      large
+      title="LOOKUP CURRENT ADDRESS"
+      backgroundColor="#428bca"
+      onPress={onPress}
+    />
+  );
+};
+
+const lookupCurrentAddress = (context) => {
+  if (context.state.showModal) {
+    console.log('Process looking up for current address using GPS...');
+    setTimeout(() => {
+      console.log('Closing modal...');
+      context.setState({ showModal: false });
+    }, 5000);
+  }
+};
 
 const errorMessage = () => {
   Alert.alert(
@@ -41,7 +57,7 @@ const errorMessage = () => {
     [{text: 'Close'}],
     { cancelable: false }
   )
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -50,6 +66,14 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   lookupButton: {
     height: 70
