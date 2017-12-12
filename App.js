@@ -6,7 +6,9 @@ import MapView from 'react-native-maps';
 
 export default class App extends React.Component {
   state = {
-    showModal: false,
+    showProcessModal: false,
+    showAddressModal: false,
+    addressFound: false,
     mapInitialised: false,
     mapRegion: null,
     latitude: null,
@@ -18,8 +20,8 @@ export default class App extends React.Component {
       let region = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
-        latitudeDelta: 0.00922*1.5,
-        longitudeDelta: 0.00421*1.5
+        latitudeDelta: 0.00922 * 1.5,
+        longitudeDelta: 0.00421 * 1.5
       }
 
       this.onRegionChange(region, region.latitude, region.longitude);
@@ -56,7 +58,11 @@ export default class App extends React.Component {
                     latitude: (this.state.latitude + 0.00050),
                     longitude: (this.state.longitude + 0.00050),
                   }}
-                />
+                >
+                  <View style={styles.markerOuter}>
+                    <View style={styles.markerInner}></View>
+                  </View>
+                </MapView.Marker>
               </MapView>
             ) : (
               <View style={styles.initMap}>
@@ -64,14 +70,23 @@ export default class App extends React.Component {
               </View>
             )
           }
-          <Modal isVisible={this.state.showModal}>
-            <View style={styles.modalContent}>
-              <Text>Looking up address from current GPS...</Text>
+          <Modal isVisible={this.state.showAddressModal}>
+            <View style={styles.addressModalContent}>
+              <Text style={styles.modalTextBold}>GPS Coordinates:</Text>
+              <Text style={styles.modalText}>Lat: {this.state.latitude}</Text>
+              <Text style={styles.modalText}>Long: {this.state.longitude}</Text>
+              <Text />
+              <Text style={styles.hint}>Swipe down to dismiss</Text>
+            </View>
+          </Modal>
+          <Modal isVisible={this.state.showProcessModal}>
+            <View style={styles.processModalContent}>
+              <Text style={styles.processModalText}>Please wait looking up address from current GPS...</Text>
             </View>
           </Modal>
         </View>
         <View style={styles.lookupButton}>
-          {renderButton(this, () => this.setState({ showModal: true }))}
+          {renderButton(this, () => this.setState({ showProcessModal: true }))}
         </View>
       </View>
     );
@@ -79,7 +94,7 @@ export default class App extends React.Component {
 }
 
 const renderButton = (context, onPress) => {
-  lookupCurrentAddress(context);
+  lookupCurrentAddress(context)
 
   return (
     <Button
@@ -92,12 +107,18 @@ const renderButton = (context, onPress) => {
 };
 
 const lookupCurrentAddress = (context) => {
-  if (context.state.showModal) {
-    console.log('Process looking up for current address using GPS...');
+  if (context.state.showProcessModal) {
+    console.log('Looking up for current address simulation...');
+
     setTimeout(() => {
-      console.log('Closing modal...');
-      context.setState({ showModal: false });
-    }, 5000);
+      console.log('Closing process modal...');
+      context.setState({ showProcessModal: false });
+    }, 2000);
+
+    setTimeout(() => {
+      console.log('Show address modal...');
+      context.setState({ showAddressModal: true });
+    }, 2500);
   }
 };
 
@@ -124,13 +145,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  modalContent: {
+  markerOuter: {
+    backgroundColor: 'rgba(0, 102, 255, 0.15)',
+    borderRadius: 50,
+    height: 50,
+    width: 50,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  markerInner: {
+    backgroundColor: 'rgba(0, 102, 255, 0.5)',
+    borderRadius: 10,
+    height: 10,
+    width: 10
+  },
+  processModalContent: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 4
+  },
+  processModalText: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 24,
+    textAlign: 'center'
+  },
+  addressModalContent: {
     backgroundColor: 'white',
     padding: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 4
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: 'center'
+  },
+  modalTextBold: {
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: 'bold'
+  },
+  hint: {
+    color: '#bbb',
+    fontSize: 16,
+    fontStyle: 'italic',
+    textAlign: 'center'
   },
   lookupButton: {
     height: 70
