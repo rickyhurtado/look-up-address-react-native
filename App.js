@@ -3,6 +3,7 @@ import { StatusBar, StyleSheet, View, Text, Alert } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from 'react-native-modal';
 import MapView from 'react-native-maps';
+import GestureRecognizer, {swipeDirections} from 'react-native-swipe-gestures';
 
 export default class App extends React.Component {
   state = {
@@ -26,6 +27,10 @@ export default class App extends React.Component {
 
       this.onRegionChange(region, region.latitude, region.longitude);
     });
+  }
+
+  onSwipeDown(state) {
+    this.setState({ showAddressModal: false });
   }
 
   onRegionChange(region, latitude, longitude) {
@@ -70,15 +75,17 @@ export default class App extends React.Component {
               </View>
             )
           }
-          <Modal isVisible={this.state.showAddressModal}>
-            <View style={styles.addressModalContent}>
-              <Text style={styles.modalTextBold}>GPS Coordinates:</Text>
-              <Text style={styles.modalText}>Lat: {this.state.latitude}</Text>
-              <Text style={styles.modalText}>Long: {this.state.longitude}</Text>
-              <Text />
-              <Text style={styles.hint}>Swipe down to dismiss</Text>
-            </View>
-          </Modal>
+          <GestureRecognizer onSwipeDown={(state) => this.onSwipeDown(state)}>
+            <Modal isVisible={this.state.showAddressModal}>
+              <View style={styles.addressModalContent}>
+                <Text style={styles.modalTextBold}>GPS Coordinates:</Text>
+                <Text style={styles.modalText}>Lat: {this.state.latitude}</Text>
+                <Text style={styles.modalText}>Long: {this.state.longitude}</Text>
+                <Text />
+                <Text style={styles.hint}>Swipe down to dismiss</Text>
+              </View>
+            </Modal>
+          </GestureRecognizer>
           <Modal isVisible={this.state.showProcessModal}>
             <View style={styles.processModalContent}>
               <Text style={styles.processModalText}>Please wait looking up address from current GPS...</Text>
@@ -167,8 +174,9 @@ const styles = StyleSheet.create({
     borderRadius: 4
   },
   processModalText: {
-    color: 'rgba(255, 255, 255, 0.75)',
+    color: 'rgba(255, 255, 255, 0.65)',
     fontSize: 24,
+    lineHeight: 35,
     textAlign: 'center'
   },
   addressModalContent: {
@@ -179,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 4
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 18,
     textAlign: 'center'
   },
   modalTextBold: {
