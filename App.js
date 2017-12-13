@@ -1,9 +1,12 @@
 import React from 'react';
-import { StatusBar, StyleSheet, View, Text, Alert } from 'react-native';
+import { StatusBar, StyleSheet, TouchableWithoutFeedback, View, Text, Alert } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from 'react-native-modal';
 import MapView from 'react-native-maps';
 import GestureRecognizer, {swipeDirections} from 'react-native-swipe-gestures';
+
+let processModalTimeoutID = 0;
+let addressModalTimeoutID = 0;
 
 export default class App extends React.Component {
   state = {
@@ -29,10 +32,6 @@ export default class App extends React.Component {
     });
   }
 
-  onSwipeDown(state) {
-    this.setState({ showAddressModal: false });
-  }
-
   onRegionChange(region, latitude, longitude) {
     this.setState({
       mapInitialised: true,
@@ -40,6 +39,18 @@ export default class App extends React.Component {
       latitude: latitude || this.state.latitude,
       longitude: longitude || this.state.longitude
     });
+  }
+
+  onSwipeDown(state) {
+    console.log('Address modal has been closed.');
+    this.setState({ showAddressModal: false });
+  }
+
+  onTapProcessModal() {
+    console.log('Process has been aborted!');
+    this.setState({ showProcessModal: false });
+    clearTimeout(processModalTimeoutID);
+    clearTimeout(addressModalTimeoutID);
   }
 
   componentWillUnmount() {
@@ -87,9 +98,13 @@ export default class App extends React.Component {
             </Modal>
           </GestureRecognizer>
           <Modal isVisible={this.state.showProcessModal}>
-            <View style={styles.processModalContent}>
-              <Text style={styles.processModalText}>Please wait looking up address from current GPS...</Text>
-            </View>
+            <TouchableWithoutFeedback onPress={this.onTapProcessModal.bind(this)}>
+              <View style={styles.processModalView}>
+                <View style={styles.processModalContent}>
+                  <Text style={styles.processModalText}>Please wait looking up address from current GPS...</Text>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
           </Modal>
         </View>
         <View style={styles.lookupButton}>
@@ -117,12 +132,12 @@ const lookupCurrentAddress = (context) => {
   if (context.state.showProcessModal) {
     console.log('Looking up for current address simulation...');
 
-    setTimeout(() => {
+    processModalTimeoutID = setTimeout(() => {
       console.log('Closing process modal...');
       context.setState({ showProcessModal: false });
     }, 2000);
 
-    setTimeout(() => {
+    addressModalTimeoutID = setTimeout(() => {
       console.log('Show address modal...');
       context.setState({ showAddressModal: true });
     }, 2500);
@@ -165,6 +180,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 10,
     width: 10
+  },
+  processModalView: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   processModalContent: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
