@@ -107,7 +107,7 @@ export default class App extends React.Component {
             </TouchableWithoutFeedback>
           </Modal>
         </View>
-        <View style={styles.lookupButton}>
+        <View style={styles.lookupButtonView}>
           {renderButton(this, () => this.setState({ showProcessModal: true }))}
         </View>
       </View>
@@ -122,7 +122,8 @@ const renderButton = (context, onPress) => {
     <Button
       large
       title="LOOKUP CURRENT ADDRESS"
-      backgroundColor="#428bca"
+      color="#222"
+      buttonStyle={styles.lookupButton}
       onPress={onPress}
     />
   );
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     padding: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4
+    borderRadius: 10
   },
   processModalText: {
     color: 'rgba(255, 255, 255, 0.65)',
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
     padding: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4
+    borderRadius: 10
   },
   modalText: {
     fontSize: 18,
@@ -222,7 +223,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center'
   },
+  lookupButtonView: {
+    backgroundColor: '#ddd',
+    height: 86,
+    paddingBottom: 16,
+    paddingTop: 16
+  },
   lookupButton: {
-    height: 70
+    backgroundColor: 'white',
+    borderRadius: 10,
+    borderColor: '#222',
+    borderStyle: 'solid',
+    borderWidth: 1
   }
 });
