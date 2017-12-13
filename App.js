@@ -70,9 +70,11 @@ export default class App extends React.Component {
                 onRegionChange={this.onRegionChange.bind(this)}
               >
                 <MapView.Marker
+                  anchor={{x: 0.65, y: 0.65}}
+                  centerOffset={{x: 0.65, y: 0.65}}
                   coordinate={{
-                    latitude: (this.state.latitude + 0.00050),
-                    longitude: (this.state.longitude + 0.00050),
+                    latitude: this.state.latitude,
+                    longitude: this.state.longitude,
                   }}
                 >
                   <View style={styles.markerOuter}>
