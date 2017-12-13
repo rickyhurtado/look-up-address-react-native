@@ -4,9 +4,11 @@ import { Button } from 'react-native-elements';
 import Modal from 'react-native-modal';
 import MapView from 'react-native-maps';
 import GestureRecognizer, {swipeDirections} from 'react-native-swipe-gestures';
+import Axios from 'axios';
+import Moment from 'moment';
+import Secret from './secret';
 
-let processModalTimeoutID = 0;
-let addressModalTimeoutID = 0;
+let axiosCancelToken;
 
 export default class App extends React.Component {
   state = {
@@ -18,6 +20,10 @@ export default class App extends React.Component {
     latitude: null,
     longitude: null
   };
+  shortAddress = null;
+  longAddress = null;
+  currentTime = null;
+  addressModalID = 0;
 
   componentDidMount() {
     this.watchID = navigator.geolocation.watchPosition((position) => {
@@ -32,6 +38,10 @@ export default class App extends React.Component {
     });
   }
 
+  componentWillUnmount() {
+    navigator.geolocation.clearWatch(this.watchID);
+  }
+
   onRegionChange(region, latitude, longitude) {
     this.setState({
       mapInitialised: true,
@@ -41,20 +51,21 @@ export default class App extends React.Component {
     });
   }
 
-  onSwipeDown(state) {
-    console.log('Address modal has been closed.');
+  onTapProcessModal() {
+    axiosCancelToken();
+    this.setState({ showProcessModal: false });
+    clearTimeout(this.addressModalID);
+    console.log('API request has been cancelled.');
+  }
+
+  onSwipeDown() {
     this.setState({ showAddressModal: false });
   }
 
-  onTapProcessModal() {
-    console.log('Process has been aborted!');
-    this.setState({ showProcessModal: false });
-    clearTimeout(processModalTimeoutID);
-    clearTimeout(addressModalTimeoutID);
-  }
-
-  componentWillUnmount() {
-    navigator.geolocation.clearWatch(this.watchID);
+  lookupCurrentAddress() {
+    console.log('Processing Google API request...');
+    this.setState({ showProcessModal: true });
+    googleAPIRequest(this);
   }
 
   render() {
@@ -88,13 +99,16 @@ export default class App extends React.Component {
               </View>
             )
           }
-          <GestureRecognizer onSwipeDown={(state) => this.onSwipeDown(state)}>
+          <GestureRecognizer onSwipeDown={() => this.onSwipeDown()}>
             <Modal isVisible={this.state.showAddressModal}>
               <View style={styles.addressModalContent}>
+                <Text style={styles.modalTextBold}>{this.longAddress}</Text>
+                <Text style={styles.modalText}>Fetched at {this.currentTime}</Text>
+                <Text style={styles.space} />
                 <Text style={styles.modalTextBold}>GPS Coordinates:</Text>
-                <Text style={styles.modalText}>Lat: {this.state.latitude}</Text>
-                <Text style={styles.modalText}>Long: {this.state.longitude}</Text>
-                <Text />
+                <Text style={styles.modalText}>Lat: {roundLoc(this.state.latitude)}</Text>
+                <Text style={styles.modalText}>Lng: {roundLoc(this.state.longitude)}</Text>
+                <Text style={styles.space} />
                 <Text style={styles.hint}>Swipe down to dismiss</Text>
               </View>
             </Modal>
@@ -110,51 +124,74 @@ export default class App extends React.Component {
           </Modal>
         </View>
         <View style={styles.lookupButtonView}>
-          {renderButton(this, () => this.setState({ showProcessModal: true }))}
+          <Button
+            large
+            title="LOOKUP CURRENT ADDRESS"
+            color="#222"
+            buttonStyle={styles.lookupButton}
+            onPress={this.lookupCurrentAddress.bind(this)}
+          />
         </View>
       </View>
     );
   }
 }
+const googleAPIRequest = (context) => {
+  const CancelToken = Axios.CancelToken;
 
-const renderButton = (context, onPress) => {
-  lookupCurrentAddress(context)
+  Axios
+    .get(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${context.state.latitude},${context.state.longitude}&key=${Secret.API_KEY}`,
+      {
+        cancelToken: new CancelToken(function executor(cancel) {
+          axiosCancelToken = cancel;
+        })
+      }
+    )
+    .then(response => {
+      console.log('Google API request completed.');
 
-  return (
-    <Button
-      large
-      title="LOOKUP CURRENT ADDRESS"
-      color="#222"
-      buttonStyle={styles.lookupButton}
-      onPress={onPress}
-    />
-  );
-};
+      if (response.data.status !== 'OK') {
+        throw new Error(`Geocode error: ${response.data.status}`);
+      }
 
-const lookupCurrentAddress = (context) => {
-  if (context.state.showProcessModal) {
-    console.log('Looking up for current address simulation...');
+      console.log(response.data.results[0]);
 
-    processModalTimeoutID = setTimeout(() => {
-      console.log('Closing process modal...');
+      context.shortAddress;
+      context.longAddress = response.data.results[0].formatted_address;
+      context.currentTime = Moment().format('h:mma');
+
+      setTimeout(() => {
+        context.setState({ showProcessModal: false });
+      }, 700);
+
+      context.addressModalID = setTimeout(() => {
+        context.setState({ showAddressModal: true });
+      }, 1400);
+    })
+    .catch(error => {
+      if (Axios.isCancel(error)) {
+        return true;
+      }
+
+      console.log('Geocode error:', error);
       context.setState({ showProcessModal: false });
-    }, 2000);
-
-    addressModalTimeoutID = setTimeout(() => {
-      console.log('Show address modal...');
-      context.setState({ showAddressModal: true });
-    }, 2500);
-  }
-};
+      setTimeout(errorMessage, 500);
+    });
+}
 
 const errorMessage = () => {
   Alert.alert(
     'Ooops!',
-    'Sorry, something went wrong. Please try in a few minutes or restart the application.',
+    'Sorry, something went wrong. Please check your internet connection or try in a few minutes. If error still exists, close and restart the applciation.',
     [{text: 'Close'}],
     { cancelable: false }
   )
 };
+
+const roundLoc = (value) => {
+  return Number(`${Math.round(`${value}e7`)}e-7`);
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -208,20 +245,27 @@ const styles = StyleSheet.create({
     padding: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10
+    borderRadius: 10,
+    paddingTop: 70,
+    paddingRight: 35,
+    paddingBottom: 70,
+    paddingLeft: 35
   },
   modalText: {
-    fontSize: 18,
+    fontSize: 22,
     textAlign: 'center'
   },
   modalTextBold: {
-    fontSize: 16,
+    fontSize: 22,
     textAlign: 'center',
     fontWeight: 'bold'
   },
+  space: {
+    height: 40
+  },
   hint: {
     color: '#bbb',
-    fontSize: 16,
+    fontSize: 18,
     fontStyle: 'italic',
     textAlign: 'center'
   },
