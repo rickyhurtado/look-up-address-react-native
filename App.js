@@ -167,7 +167,7 @@ const saveCurrentAddress = (context, data) => {
 const errorMessage = () => {
   Alert.alert(
     'Ooops!',
-    'Sorry, something went wrong. Please check your internet connection or try in a few minutes. If error still exists, close and restart the applciation.',
+    'Sorry, something went wrong. Please check your internet connection or try in a few minutes. If error still exists, close and restart the application.',
     [{text: 'Close'}],
     { cancelable: false }
   )
