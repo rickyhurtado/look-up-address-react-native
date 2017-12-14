@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBar, StyleSheet, TouchableWithoutFeedback, View, Text, Alert } from 'react-native';
+import { StatusBar, StyleSheet, TouchableWithoutFeedback, View, ScrollView, Text, Alert } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from 'react-native-modal';
 import MapView from 'react-native-maps';
@@ -24,6 +24,7 @@ export default class App extends React.Component {
   longAddress = null;
   currentTime = null;
   addressModalID = 0;
+  history = [];
 
   componentDidMount() {
     this.watchID = navigator.geolocation.watchPosition((position) => {
@@ -69,6 +70,8 @@ export default class App extends React.Component {
   }
 
   render() {
+    const history = this.history;
+
     return (
       <View style={styles.container}>
         <StatusBar hidden={true}/>
@@ -123,6 +126,17 @@ export default class App extends React.Component {
             </TouchableWithoutFeedback>
           </Modal>
         </View>
+        <View style={styles.historyView}>
+          <ScrollView>
+            {
+               history.map((item, index) => (
+                 <View key={item.id} style={styles.historyViewItem}>
+                   <Text style={styles.historyViewItemText}>{item.time} - {item.address}</Text>
+                 </View>
+               ))
+             }
+          </ScrollView>
+        </View>
         <View style={styles.lookupButtonView}>
           <Button
             large
@@ -155,18 +169,30 @@ const googleAPIRequest = (context) => {
         throw new Error(`Geocode error: ${response.data.status}`);
       }
 
-      console.log(response.data.results[0]);
+      const data = response.data.results[0];
+      const address = data.address_components;
 
-      context.shortAddress;
-      context.longAddress = response.data.results[0].formatted_address;
       context.currentTime = Moment().format('h:mma');
+      context.longAddress = data.formatted_address;
+      context.shortAddress = `${address[0].short_name} ${address[1].short_name}`;
 
       setTimeout(() => {
         context.setState({ showProcessModal: false });
       }, 700);
 
       context.addressModalID = setTimeout(() => {
-        context.setState({ showAddressModal: true });
+        let history = context.history;
+
+        history.unshift({
+          id: (context.history.length + 1),
+          time: context.currentTime,
+          address: `${context.shortAddress} - ${(context.history.length + 1)}`
+        });
+
+        context.setState({
+          showAddressModal: true,
+          history: history
+        });
       }, 1400);
     })
     .catch(error => {
@@ -269,11 +295,29 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center'
   },
+  historyView: {
+    flex: 1,
+    backgroundColor: 'white',
+    marginTop: 10
+  },
+  historyViewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+    marginLeft: 20
+  },
+  historyViewItemText: {
+    fontSize: 18
+  },
   lookupButtonView: {
     backgroundColor: '#ddd',
-    height: 86,
-    paddingBottom: 16,
-    paddingTop: 16
+    height: 90,
+    paddingTop: 18,
+    paddingRight: 18,
+    paddingBottom: 5,
+    paddingLeft: 5
   },
   lookupButton: {
     backgroundColor: 'white',
