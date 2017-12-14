@@ -1,14 +1,20 @@
 import React from 'react';
-import { StatusBar, StyleSheet, TouchableWithoutFeedback, View, ScrollView, Text, Alert } from 'react-native';
+import { StatusBar, StyleSheet, TouchableWithoutFeedback, View, ScrollView, Text, Alert, AsyncStorage } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from 'react-native-modal';
 import MapView from 'react-native-maps';
 import GestureRecognizer, {swipeDirections} from 'react-native-swipe-gestures';
+import Storage from 'react-native-storage';
 import Axios from 'axios';
 import Moment from 'moment';
 import Secret from './secret';
 
 let axiosCancelToken;
+const storage = new Storage({
+  size: 20,
+  storageBackend: AsyncStorage,
+  defaultExpires: 1000 * 3600 * 24 // 1 day
+});
 
 export default class App extends React.Component {
   state = {
@@ -27,6 +33,10 @@ export default class App extends React.Component {
   history = [];
 
   componentDidMount() {
+    storage.getAllDataForKey('history').then(history => {
+      this.history = history.reverse();
+    });
+
     this.watchID = navigator.geolocation.watchPosition((position) => {
       let region = {
         latitude: position.coords.latitude,
@@ -182,17 +192,22 @@ const googleAPIRequest = (context) => {
 
       context.addressModalID = setTimeout(() => {
         let history = context.history;
-
-        history.unshift({
-          id: (context.history.length + 1),
+        let newId = history.length > 0 ? (history[0].id + 1) : 1;
+        const newHistory = {
+          id: newId,
           time: context.currentTime,
-          address: `${context.shortAddress} - ${(context.history.length + 1)}`
+          address: `${context.shortAddress}`
+        };
+
+        storage.save({
+          key: 'history',
+          id: newId,
+          data: newHistory
         });
 
-        context.setState({
-          showAddressModal: true,
-          history: history
-        });
+        history.unshift(newHistory);
+
+        context.setState({ showAddressModal: true });
       }, 1400);
     })
     .catch(error => {
